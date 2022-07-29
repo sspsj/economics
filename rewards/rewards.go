@@ -19,7 +19,9 @@ const (
 )
 
 var (
-	Lambda = math.Log(2) / (HalfLife / LayerTime)
+	// LayersPerHalving is the number of layers after which the per-layer subsidy halves
+	LayersPerHalving = uint32(math.Floor(HalfLife / LayerTime))
+	Lambda           = math.Log(2) / float64(LayersPerHalving)
 )
 
 // TotalAccumulatedSubsidyAtLayer returns the total accumulated block subsidy paid by the protocol as of the given
