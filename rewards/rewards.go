@@ -1,21 +1,10 @@
 package rewards
 
 import "math"
-
-const (
-	OneSmesh = 10000000000 // smidge per smesh
-
-	// Total issuance figures
-
-	TotalIssuance = OneSmesh * 2400000000 // 2.4bn smesh
-	TotalVaulted  = OneSmesh * 120000000  // 120mn smesh
-	TotalSubsidy  = TotalIssuance - TotalVaulted
-
-	HalfLife = 3100000 // in layers
-)
+import "github.com/spacemeshos/economics/constants"
 
 var (
-	Lambda = math.Log(2) / float64(HalfLife)
+	Lambda = math.Log(2) / float64(constants.HalfLife)
 )
 
 // TotalAccumulatedSubsidyAtLayer returns the total accumulated block subsidy paid by the protocol as of the given
@@ -27,7 +16,7 @@ func TotalAccumulatedSubsidyAtLayer(effectiveGenesis uint32, layerID uint32) uin
 	effectiveLayer := layerID - effectiveGenesis
 
 	// add one because layers are zero-indexed
-	return uint64(TotalSubsidy * (1 - math.Exp(-Lambda*float64(effectiveLayer+1))))
+	return uint64(constants.TotalSubsidy * (1 - math.Exp(-Lambda*float64(effectiveLayer+1))))
 }
 
 // TotalSubsidyAtLayer returns the total subsidy issued in the layer

@@ -22,9 +22,17 @@ func Test_IssuanceAtEffectiveGenesis(t *testing.T) {
 	assert.Equal(t, expectedIssuance, totalSubsidy)
 }
 
-// test issuance decay layer to layer, expect it to decay by precisely lambda
-//func Test_LayerToLayer(t *testing.T) {
-//}
+// test layer-to-layer decay in total issuance
+func Test_LayerToLayer(t *testing.T) {
+	expectedTotalBefore := uint64(TotalSubsidy * (1 - math.Exp(-Lambda)))
+	expectedTotalAfter := uint64(TotalSubsidy * (1 - math.Exp(-Lambda*2)))
+
+	subsidyBefore := TotalAccumulatedSubsidyAtLayer(0, 0)
+	subsidyAfter := TotalAccumulatedSubsidyAtLayer(0, 1)
+
+	assert.Equal(t, expectedTotalBefore, subsidyBefore)
+	assert.Equal(t, expectedTotalAfter, subsidyAfter)
+}
 
 // test issuance halving
 func Test_Halving(t *testing.T) {
