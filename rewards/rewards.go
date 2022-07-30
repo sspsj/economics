@@ -11,17 +11,11 @@ const (
 	TotalVaulted  = OneSmesh * 120000000  // 120mn smesh
 	TotalSubsidy  = TotalIssuance - TotalVaulted
 
-	// Time-based constants
-
-	LayerTime = 5                  // in minutes
-	OneYear   = 365.2425 * 24 * 60 // in minutes
-	HalfLife  = OneYear * 29.32233 // exponential decay half-life
+	HalfLife = 3100000 // in layers
 )
 
 var (
-	// LayersPerHalving is the number of layers after which the per-layer subsidy halves
-	LayersPerHalving = uint32(math.Floor(HalfLife / LayerTime))
-	Lambda           = math.Log(2) / float64(LayersPerHalving)
+	Lambda = math.Log(2) / float64(HalfLife)
 )
 
 // TotalAccumulatedSubsidyAtLayer returns the total accumulated block subsidy paid by the protocol as of the given

@@ -30,11 +30,11 @@ func Test_IssuanceAtEffectiveGenesis(t *testing.T) {
 func Test_Halving(t *testing.T) {
 	expectedLayerSubsidyBefore := uint64(TotalSubsidy * (1 - math.Exp(-Lambda)))
 	expectedLayerSubsidyAfter :=
-		uint64(TotalSubsidy*(1-math.Exp(-Lambda*float64(LayersPerHalving+1)))) -
-			uint64(TotalSubsidy*(1-math.Exp(-Lambda*float64(LayersPerHalving))))
+		uint64(TotalSubsidy*(1-math.Exp(-Lambda*float64(HalfLife+1)))) -
+			uint64(TotalSubsidy*(1-math.Exp(-Lambda*float64(HalfLife))))
 
 	subsidyBefore := TotalSubsidyAtLayer(0, 0)
-	subsidyAfter := TotalSubsidyAtLayer(0, LayersPerHalving)
+	subsidyAfter := TotalSubsidyAtLayer(0, HalfLife)
 
 	assert.Equal(t, expectedLayerSubsidyBefore, subsidyBefore)
 	assert.Equal(t, expectedLayerSubsidyAfter, subsidyAfter)
