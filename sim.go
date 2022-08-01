@@ -1,17 +1,79 @@
 package main
 
 import (
+	"github.com/jedib0t/go-pretty/v6/table"
+	"github.com/spacemeshos/economics/constants"
+	"github.com/spacemeshos/economics/rewards"
+	"github.com/spacemeshos/economics/vesting"
 	"github.com/tcnksm/go-input"
 	"log"
+	"os"
 	"strconv"
 	"time"
 )
 
 func main() {
-	genesisDate, tickInterval, endLayer := getParams()
-	log.Printf("genesis date is %s\n", genesisDate)
+	currentDate, tickInterval, endLayer := getParams()
+	log.Printf("genesis date is %s\n", currentDate)
 	log.Printf("tick interval is %d\n", tickInterval)
 	log.Printf("last layer is %d\n", endLayer)
+
+	t := table.NewWriter()
+	t.SetOutputMirror(os.Stdout)
+	t.AppendHeader(table.Row{
+		"layer",
+		"date",
+		"vaultTotal",
+		"vaultNewVest",
+		"vaultTotalVest",
+		"subsidyNew",
+		"subsidyTotal",
+		"circulatingTotal",
+		"issuanceTotal",
+	})
+
+	vaultTotal := constants.TotalVaulted
+	vaultVested := uint64(0)
+	//subsidyNew := uint64(0)
+	subsidyTotal := uint64(0)
+	circulatingTotal := uint64(0)
+	issuanceTotal := uint64(0)
+	effectiveGenesis := uint32(0)
+
+	oneLayer, _ := time.ParseDuration("5m")
+
+	// note: we could optimize this and just step by tick interval, but we do the simplest possible thing here and get
+	// as close as possible to reality by stepping through every single layer
+	for layerID := uint32(0); layerID <= endLayer; layerID++ {
+		// update vault
+		vaultVested = vesting.AccumulatedVestAtLayer(effectiveGenesis, layerID)
+		vaultNewVest := vesting.VestAtLayer(effectiveGenesis, layerID)
+		circulatingTotal += vaultNewVest
+
+		// add new issuance
+		subsidyTotalNew := rewards.TotalAccumulatedSubsidyAtLayer(effectiveGenesis, layerID)
+		subsidyThisLayer := subsidyTotalNew - subsidyTotal
+		circulatingTotal += subsidyThisLayer
+		issuanceTotal += subsidyThisLayer
+		subsidyTotal = subsidyTotalNew
+
+		if layerID%tickInterval == 0 {
+			t.AppendRow([]interface{}{
+				layerID,
+				currentDate,
+				vaultTotal,
+				vaultNewVest,
+				vaultVested,
+				subsidyThisLayer,
+				subsidyTotal,
+				circulatingTotal,
+				issuanceTotal,
+			})
+		}
+		currentDate = currentDate.Add(oneLayer)
+		//fmt.Printf(".")
+	}
+	t.Render()
 }
 
 func getParams() (time.Time, uint32, uint32) {
