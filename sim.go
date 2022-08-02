@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/jedib0t/go-pretty/v6/table"
+	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/spacemeshos/economics/constants"
 	"github.com/spacemeshos/economics/rewards"
 	"github.com/spacemeshos/economics/vesting"
@@ -27,7 +28,7 @@ func main() {
 		"date",
 		"vaultNewVest",
 		"vaultTotalVest",
-		"vaultPctVested",
+		"vaultPctVest",
 		"vaultTotal",
 		"subsidyNew",
 		"subsidyTotal",
@@ -37,6 +38,18 @@ func main() {
 		"pctCirculating",
 		"pctFinalIssuance",
 	})
+	t.SetColumnConfigs([]table.ColumnConfig{
+		{Number: 3, Align: text.AlignRight},
+		{Number: 4, Align: text.AlignRight},
+		{Number: 5, Align: text.AlignRight},
+		{Number: 7, Align: text.AlignRight},
+		{Number: 8, Align: text.AlignRight},
+		{Number: 9, Align: text.AlignRight},
+		{Number: 10, Align: text.AlignRight},
+		{Number: 12, Align: text.AlignRight},
+		{Number: 13, Align: text.AlignRight},
+	})
+	t.SetCaption("all figures in SMESH")
 
 	p := message.NewPrinter(language.English)
 
@@ -68,20 +81,20 @@ func main() {
 		subsidyTotal = subsidyTotalNew
 
 		if layerID%tickInterval == 0 || layerID == endLayer {
-			t.AppendRow([]interface{}{
+			t.AppendRow(table.Row{
 				layerID,
 				currentDate.Format("2006-01-02"),
-				p.Sprintf("%d", vaultNewVest/constants.OneSmesh),
-				p.Sprintf("%d", vaultVested/constants.OneSmesh),
-				p.Sprintf("%0.2f%%", 100*float64(vaultVested)/float64(vaultTotal)),
+				p.Sprintf("%7d", vaultNewVest/constants.OneSmesh),
+				p.Sprintf("%11d", vaultVested/constants.OneSmesh),
+				p.Sprintf("%7.2f%%", 100*float64(vaultVested)/float64(vaultTotal)),
 				p.Sprintf("%d", vaultTotal/constants.OneSmesh),
-				p.Sprintf("%d", subsidyNew/constants.OneSmesh),
-				p.Sprintf("%d", subsidyTotal/constants.OneSmesh),
-				p.Sprintf("%d", circulatingTotal/constants.OneSmesh),
-				p.Sprintf("%d", issuanceTotal/constants.OneSmesh),
-				p.Sprintf("%0.2f%%", 100*float64(vaultTotal)/float64(issuanceTotal)),
-				p.Sprintf("%0.2f%%", 100*float64(circulatingTotal)/float64(issuanceTotal)),
-				p.Sprintf("%0.2f%%", 100*float64(issuanceTotal)/float64(constants.TotalIssuance)),
+				p.Sprintf("%7d", subsidyNew/constants.OneSmesh),
+				p.Sprintf("%11d", subsidyTotal/constants.OneSmesh),
+				p.Sprintf("%11d", circulatingTotal/constants.OneSmesh),
+				p.Sprintf("%11d", issuanceTotal/constants.OneSmesh),
+				p.Sprintf("%7.2f%%", 100*float64(vaultTotal)/float64(issuanceTotal)),
+				p.Sprintf("%7.2f%%", 100*float64(circulatingTotal)/float64(issuanceTotal)),
+				p.Sprintf("%7.2f%%", 100*float64(issuanceTotal)/float64(constants.TotalIssuance)),
 			})
 
 			// reset these
