@@ -6,6 +6,8 @@ import (
 	"github.com/spacemeshos/economics/rewards"
 	"github.com/spacemeshos/economics/vesting"
 	"github.com/tcnksm/go-input"
+	"golang.org/x/text/language"
+	"golang.org/x/text/message"
 	"log"
 	"os"
 	"strconv"
@@ -23,16 +25,19 @@ func main() {
 	t.AppendHeader(table.Row{
 		"layer",
 		"date",
-		"vaultTotal",
 		"vaultNewVest",
 		"vaultTotalVest",
+		"vaultPctVested",
+		"vaultTotal",
 		"subsidyNew",
 		"subsidyTotal",
 		"circulatingTotal",
 		"issuanceTotal",
 	})
 
-	vaultTotal := constants.TotalVaulted
+	p := message.NewPrinter(language.English)
+
+	vaultTotal := uint64(constants.TotalVaulted)
 	vaultVested := uint64(0)
 	//subsidyNew := uint64(0)
 	subsidyTotal := uint64(0)
@@ -42,12 +47,14 @@ func main() {
 
 	oneLayer, _ := time.ParseDuration("5m")
 
+	var vaultNewVest, subsidyNew uint64
+
 	// note: we could optimize this and just step by tick interval, but we do the simplest possible thing here and get
 	// as close as possible to reality by stepping through every single layer
 	for layerID := uint32(0); layerID <= endLayer; layerID++ {
 		// update vault
 		vaultVested = vesting.AccumulatedVestAtLayer(effectiveGenesis, layerID)
-		vaultNewVest := vesting.VestAtLayer(effectiveGenesis, layerID)
+		vaultNewVest += vesting.VestAtLayer(effectiveGenesis, layerID)
 		circulatingTotal += vaultNewVest
 
 		// add new issuance
@@ -55,20 +62,26 @@ func main() {
 		subsidyThisLayer := subsidyTotalNew - subsidyTotal
 		circulatingTotal += subsidyThisLayer
 		issuanceTotal += subsidyThisLayer
+		subsidyNew += subsidyThisLayer
 		subsidyTotal = subsidyTotalNew
 
 		if layerID%tickInterval == 0 {
 			t.AppendRow([]interface{}{
 				layerID,
-				currentDate,
-				vaultTotal,
-				vaultNewVest,
-				vaultVested,
-				subsidyThisLayer,
-				subsidyTotal,
-				circulatingTotal,
-				issuanceTotal,
+				currentDate.Format("2006-01-02"),
+				p.Sprintf("%d", vaultNewVest/constants.OneSmesh),
+				p.Sprintf("%d", vaultVested/constants.OneSmesh),
+				p.Sprintf("%0.2f", float64(vaultVested)/float64(vaultTotal)),
+				p.Sprintf("%d", vaultTotal/constants.OneSmesh),
+				p.Sprintf("%d", subsidyNew/constants.OneSmesh),
+				p.Sprintf("%d", subsidyTotal/constants.OneSmesh),
+				p.Sprintf("%d", circulatingTotal/constants.OneSmesh),
+				p.Sprintf("%d", issuanceTotal/constants.OneSmesh),
 			})
+
+			// reset these
+			vaultNewVest = 0
+			subsidyNew = 0
 		}
 		currentDate = currentDate.Add(oneLayer)
 		//fmt.Printf(".")
