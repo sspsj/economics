@@ -33,17 +33,18 @@ func main() {
 		"subsidyTotal",
 		"circulatingTotal",
 		"issuanceTotal",
+		"pctVault",
+		"pctCirculating",
+		"pctFinalIssuance",
 	})
 
 	p := message.NewPrinter(language.English)
 
 	vaultTotal := uint64(constants.TotalVaulted)
 	vaultVested := uint64(0)
-	//subsidyNew := uint64(0)
 	subsidyTotal := uint64(0)
 	circulatingTotal := uint64(0)
-	issuanceTotal := uint64(0)
-	effectiveGenesis := uint32(0)
+	issuanceTotal := vaultTotal // vaulted amount is issued but not circulating yet
 
 	oneLayer, _ := time.ParseDuration("5m")
 
@@ -53,30 +54,34 @@ func main() {
 	// as close as possible to reality by stepping through every single layer
 	for layerID := uint32(0); layerID <= endLayer; layerID++ {
 		// update vault
-		vaultVested = vesting.AccumulatedVestAtLayer(effectiveGenesis, layerID)
-		vaultNewVest += vesting.VestAtLayer(effectiveGenesis, layerID)
-		circulatingTotal += vaultNewVest
+		vaultVested = vesting.AccumulatedVestAtLayer(layerID)
+		vestThisLayer := vesting.VestAtLayer(layerID)
+		vaultNewVest += vestThisLayer
+		circulatingTotal += vestThisLayer
 
 		// add new issuance
-		subsidyTotalNew := rewards.TotalAccumulatedSubsidyAtLayer(effectiveGenesis, layerID)
+		subsidyTotalNew := rewards.TotalAccumulatedSubsidyAtLayer(layerID)
 		subsidyThisLayer := subsidyTotalNew - subsidyTotal
 		circulatingTotal += subsidyThisLayer
 		issuanceTotal += subsidyThisLayer
 		subsidyNew += subsidyThisLayer
 		subsidyTotal = subsidyTotalNew
 
-		if layerID%tickInterval == 0 {
+		if layerID%tickInterval == 0 || layerID == endLayer {
 			t.AppendRow([]interface{}{
 				layerID,
 				currentDate.Format("2006-01-02"),
 				p.Sprintf("%d", vaultNewVest/constants.OneSmesh),
 				p.Sprintf("%d", vaultVested/constants.OneSmesh),
-				p.Sprintf("%0.2f", float64(vaultVested)/float64(vaultTotal)),
+				p.Sprintf("%0.2f%%", 100*float64(vaultVested)/float64(vaultTotal)),
 				p.Sprintf("%d", vaultTotal/constants.OneSmesh),
 				p.Sprintf("%d", subsidyNew/constants.OneSmesh),
 				p.Sprintf("%d", subsidyTotal/constants.OneSmesh),
 				p.Sprintf("%d", circulatingTotal/constants.OneSmesh),
 				p.Sprintf("%d", issuanceTotal/constants.OneSmesh),
+				p.Sprintf("%0.2f%%", 100*float64(vaultTotal)/float64(issuanceTotal)),
+				p.Sprintf("%0.2f%%", 100*float64(circulatingTotal)/float64(issuanceTotal)),
+				p.Sprintf("%0.2f%%", 100*float64(issuanceTotal)/float64(constants.TotalIssuance)),
 			})
 
 			// reset these
@@ -93,7 +98,7 @@ func getParams() (time.Time, uint32, uint32) {
 	// get params
 	ui := &input.UI{}
 	var genesisDate time.Time
-	if genesisDateStr, err := ui.Ask("genesis date (YYYYMMDD)", &input.Options{
+	if genesisDateStr, err := ui.Ask("effective genesis date (YYYYMMDD)", &input.Options{
 		Default:   "20230101",
 		HideOrder: true,
 		Required:  true,

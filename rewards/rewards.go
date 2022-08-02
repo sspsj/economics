@@ -9,22 +9,17 @@ var (
 
 // TotalAccumulatedSubsidyAtLayer returns the total accumulated block subsidy paid by the protocol as of the given
 // layer, denominated in smidge.
-func TotalAccumulatedSubsidyAtLayer(effectiveGenesis uint32, layerID uint32) uint64 {
-	if layerID < effectiveGenesis {
-		return 0
-	}
-	effectiveLayer := layerID - effectiveGenesis
-
+func TotalAccumulatedSubsidyAtLayer(layersAfterEffectiveGenesis uint32) uint64 {
 	// add one because layers are zero-indexed
-	return uint64(constants.TotalSubsidy * (1 - math.Exp(-Lambda*float64(effectiveLayer+1))))
+	return uint64(constants.TotalSubsidy * (1 - math.Exp(-Lambda*float64(layersAfterEffectiveGenesis+1))))
 }
 
 // TotalSubsidyAtLayer returns the total subsidy issued in the layer
-func TotalSubsidyAtLayer(effectiveGenesis uint32, layerID uint32) uint64 {
-	subsidyAtLayer := TotalAccumulatedSubsidyAtLayer(effectiveGenesis, layerID)
+func TotalSubsidyAtLayer(layersAfterEffectiveGenesis uint32) uint64 {
+	subsidyAtLayer := TotalAccumulatedSubsidyAtLayer(layersAfterEffectiveGenesis)
 	subsidyPrevLayer := uint64(0)
-	if layerID > 0 {
-		subsidyPrevLayer = TotalAccumulatedSubsidyAtLayer(effectiveGenesis, layerID-1)
+	if layersAfterEffectiveGenesis > 0 {
+		subsidyPrevLayer = TotalAccumulatedSubsidyAtLayer(layersAfterEffectiveGenesis - 1)
 	}
 
 	// Calculate as the difference between the total issuance as of the previous layer and the total issuance as of the

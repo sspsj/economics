@@ -1,29 +1,44 @@
 package vesting
 
-import "github.com/spacemeshos/economics/constants"
+import (
+	"github.com/spacemeshos/economics/constants"
+	"log"
+)
 
-func AccumulatedVestAtLayer(effectiveGenesis uint32, layerID uint32) uint64 {
-	if layerID < effectiveGenesis {
+func AccumulatedVestAtLayer(layersAfterEffectiveGenesis uint32) uint64 {
+	if layersAfterEffectiveGenesis < constants.VestStart {
 		return 0
-	}
-	effectiveLayer := layerID - effectiveGenesis
-	if effectiveLayer < constants.VestStart {
-		return 0
-	} else if effectiveLayer > constants.VestEnd {
+	} else if layersAfterEffectiveGenesis > constants.VestEnd {
 		return constants.TotalVaulted
 	}
-	return constants.VestPerLayer * uint64(effectiveLayer-constants.VestStart)
+
+	// Note: this rounds down to the nearest int number of smidge below the intended vest as of the input layer.
+	// No need to check for overflow on the subtraction but we can overflow on the multiplication.
+	numLayers := uint64(layersAfterEffectiveGenesis - constants.VestStart)
+	vest := constants.VestPerLayer * numLayers
+	if vest/constants.VestPerLayer != numLayers {
+		log.Panic("integer overflow")
+	}
+	return vest
 }
 
-func VestAtLayer(effectiveGenesis uint32, layerID uint32) uint64 {
-	if layerID < effectiveGenesis {
+func VestAtLayer(layersAfterEffectiveGenesis uint32) uint64 {
+	// base case: no vesting before vest start, no vesting after vest end
+	if layersAfterEffectiveGenesis < constants.VestStart {
+		return 0
+	} else if layersAfterEffectiveGenesis > constants.VestEnd {
 		return 0
 	}
-	effectiveLayer := layerID - effectiveGenesis
-	if effectiveLayer < constants.VestStart {
-		return 0
-	} else if effectiveLayer > constants.VestEnd {
-		return 0
+
+	// vest as of the previous layer
+	var prevLayerAccumulatedVest, curLayerAccumulatedVest uint64
+	if layersAfterEffectiveGenesis > 0 {
+		prevLayerAccumulatedVest = AccumulatedVestAtLayer(layersAfterEffectiveGenesis - 1)
 	}
-	return constants.VestPerLayer
+
+	// intended vest as of this layer
+	curLayerAccumulatedVest = AccumulatedVestAtLayer(layersAfterEffectiveGenesis)
+
+	// return the difference
+	return curLayerAccumulatedVest - prevLayerAccumulatedVest
 }
