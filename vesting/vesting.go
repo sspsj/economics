@@ -19,7 +19,7 @@ func AccumulatedVestAtLayer(layersAfterEffectiveGenesis uint32) uint64 {
 	if vest/constants.VestPerLayer != numLayers {
 		log.Panic("integer overflow")
 	}
-	return vest
+	return constants.VestedAtCliff + vest
 }
 
 func VestAtLayer(layersAfterEffectiveGenesis uint32) uint64 {
