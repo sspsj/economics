@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/jedib0t/go-pretty/v6/progress"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/spacemeshos/economics/constants"
@@ -30,6 +31,7 @@ func main() {
 		"vaultTotalVest",
 		"vaultPctVest",
 		"vaultTotal",
+		"subsidyPerLayer",
 		"subsidyNew",
 		"subsidyTotal",
 		"circulatingTotal",
@@ -46,12 +48,24 @@ func main() {
 		{Number: 8, Align: text.AlignRight},
 		{Number: 9, Align: text.AlignRight},
 		{Number: 10, Align: text.AlignRight},
-		{Number: 12, Align: text.AlignRight},
+		{Number: 11, Align: text.AlignRight},
 		{Number: 13, Align: text.AlignRight},
+		{Number: 14, Align: text.AlignRight},
 	})
 	t.SetCaption("all figures in SMESH")
 
 	p := message.NewPrinter(language.English)
+
+	pw := progress.NewWriter()
+	pw.SetUpdateFrequency(time.Millisecond * 100)
+	go pw.Render()
+	defer pw.Stop()
+	tracker := progress.Tracker{Total: int64(endLayer), Units: progress.Units{
+		Formatter:        progress.FormatNumber,
+		Notation:         " layers",
+		NotationPosition: progress.UnitsNotationPositionAfter,
+	}}
+	pw.AppendTracker(&tracker)
 
 	vaultTotal := uint64(constants.TotalVaulted)
 	vaultVested := uint64(0)
@@ -81,6 +95,7 @@ func main() {
 		subsidyTotal = subsidyTotalNew
 
 		if layerID%tickInterval == 0 || layerID == endLayer {
+			tracker.Increment(int64(tickInterval))
 			t.AppendRow(table.Row{
 				layerID,
 				currentDate.Format("2006-01-02"),
@@ -88,6 +103,7 @@ func main() {
 				p.Sprintf("%11d", vaultVested/constants.OneSmesh),
 				p.Sprintf("%7.2f%%", 100*float64(vaultVested)/float64(vaultTotal)),
 				p.Sprintf("%d", vaultTotal/constants.OneSmesh),
+				p.Sprintf("%7d", subsidyThisLayer/constants.OneSmesh),
 				p.Sprintf("%7d", subsidyNew/constants.OneSmesh),
 				p.Sprintf("%11d", subsidyTotal/constants.OneSmesh),
 				p.Sprintf("%11d", circulatingTotal/constants.OneSmesh),
@@ -104,6 +120,7 @@ func main() {
 		currentDate = currentDate.Add(oneLayer)
 		//fmt.Printf(".")
 	}
+	tracker.MarkAsDone()
 	t.Render()
 }
 
@@ -165,8 +182,4 @@ func getParams() (time.Time, uint32, uint32) {
 	}
 
 	return genesisDate, uint32(tickInterval), uint32(endLayer)
-	//for i := uint32(0); i < 100; i++ {
-	//	layerReward := rewards.SubsidyByLayer(i)
-	//	fmt.Println("Layer: ", i, "; Reward: ", layerReward)
-	//}
 }
