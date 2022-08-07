@@ -30,6 +30,9 @@ func Test_Accumulation(t *testing.T) {
 
 func Test_Rounddown(t *testing.T) {
 	// in low layer ranges we expect round down at each layer
+	// note that there's no way to test the accuracy of the rounddown since the issuance at any given layer is
+	// simply defined to be the difference between the total subsidy at the previous layer and the total subsidy
+	// at the layer
 	startLayerID := uint32(99)
 	endLayerID := startLayerID + 10
 
@@ -58,23 +61,34 @@ func Test_Rounddown(t *testing.T) {
 	accumulatedRounddownFloat, ok := accumulatedRounddown.Float64()
 	assert.True(t, ok)
 	assert.Greater(t, accumulatedRounddownFloat, float64(1), "expected rounddown > 1 smidge")
-	accumulatedRounddownUint, ok := accumulatedRounddown.Uint64()
-	assert.True(t, ok)
-	assert.Greater(t, accumulatedRounddownUint, uint64(1), "expected rounddown > 1 smidge")
-
-	// expect total issuance for final layer to equal per-layer issuance plus accumulated rounddown (rounded down!)
-	//totalDifferential, ok := accumulatedDifferential.Uint64()
-	//assert.True(t, ok)
-	//assert.Equalf(t, issuanceAtStart+totalDifferential+accumulatedRounddownUint, issuanceAtEnd,
-	//	"expected start issuance %d plus accumulated differential %d plus rounddown uint part %d (total %d) "+
-	//		"to equal final layer issuance %d",
-	//	issuanceAtStart, totalDifferential, accumulatedRounddownUint, issuanceAtStart+totalDifferential+accumulatedRounddownUint,
-	//	issuanceAtEnd)
 }
 
-// test hardcoded issuance in first layer
-func Test_IssuanceAtFirstLayer(t *testing.T) {
-
+// test hardcoded subsidy in sampled layers
+func Test_Subsidy(t *testing.T) {
+	testValues := []struct {
+		layerID              uint32
+		expectedSubsidyLayer uint64
+		expectedSubsidyTotal uint64
+	}{
+		{0, 477291497137, 477291497137},
+		{10, 477290484662, 5250200899893},
+		{100, 477281372481, 48205929913896},
+		{1000, 477190260232, 477718117773694},
+		{10000, 476280093827, 4768332952709153},
+		{100000, 467273365590, 47226944479755920},
+		{1000000, 386061943700, 430065653103871600},
+		{10000000, 57215889000, 1980278615961832000},
+		{100000000, 0, 2249999998621166000},
+		{1000000000, 0, 2250000000000000000},
+	}
+	for _, testTuple := range testValues {
+		subsidyLayer := TotalSubsidyAtLayer(testTuple.layerID)
+		subsidyTotal := TotalAccumulatedSubsidyAtLayer(testTuple.layerID)
+		assert.Equal(t, testTuple.expectedSubsidyLayer, subsidyLayer,
+			"expected layer %d subsidy %d to equal %d", testTuple.layerID, subsidyLayer, testTuple.expectedSubsidyLayer)
+		assert.Equal(t, testTuple.expectedSubsidyTotal, subsidyTotal,
+			"expected layer %d total subsidy %d to equal %d", testTuple.layerID, subsidyTotal, testTuple.expectedSubsidyTotal)
+	}
 }
 
 // test issuance halving
