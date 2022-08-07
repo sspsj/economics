@@ -33,30 +33,14 @@ func Test_Rounddown(t *testing.T) {
 	startLayerID := uint32(99)
 	endLayerID := startLayerID + 10
 
-	//issuanceAtStart := TotalAccumulatedSubsidyAtLayer(startLayerID)
-	//issuanceAtEnd := TotalAccumulatedSubsidyAtLayer(endLayerID)
-
 	accumulatedRounddown := new(decimal.Big)
-	//var accumulatedLayerIssuance uint64
-	//lastLayerSubsidyUnrounded := getUnroundedAccumulatedSubsidy(startLayerID)
-	//accumulatedDifferential := new(decimal.Big)
 	for layerID := startLayerID + 1; layerID <= endLayerID; layerID++ {
 		subsidyUnrounded := getUnroundedAccumulatedSubsidy(layerID)
 		assert.Equal(t, 1, subsidyUnrounded.Sign(), "expected positive subsidy value")
-		//subsidyIntPart, ok := subsidyUnrounded.Uint64()
-		//assert.True(t, ok)
-		//accumulatedLayerIssuance += subsidyIntPart
-
-		// accumulate the raw (unrounded) differentials
-		//accumulatedDifferential.Add(accumulatedDifferential, new(decimal.Big).Sub(subsidyUnrounded, lastLayerSubsidyUnrounded))
-		//lastLayerSubsidyUnrounded = subsidyUnrounded
 
 		subsidyBigIntPart := new(decimal.Big).Copy(subsidyUnrounded)
 		subsidyBigIntPart.Context.RoundingMode = decimal.ToZero
 		subsidyBigIntPart.RoundToInt()
-
-		// since both operations truncate towards zero, we expect these to be equal
-		//assert.Equal(t, 0, subsidyBigIntPart.Cmp(new(decimal.Big).SetUint64(subsidyIntPart)))
 
 		rounddown := new(decimal.Big).Sub(subsidyUnrounded, subsidyBigIntPart)
 		assert.Equal(t, 1, rounddown.Sign(), "expected positive rounddown value")
