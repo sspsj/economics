@@ -1,12 +1,13 @@
 package main
 
 import (
-	"github.com/jedib0t/go-pretty/v6/progress"
-	"github.com/jedib0t/go-pretty/v6/table"
-	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/spacemeshos/economics/constants"
 	"github.com/spacemeshos/economics/rewards"
 	"github.com/spacemeshos/economics/vesting"
+
+	"github.com/jedib0t/go-pretty/v6/progress"
+	"github.com/jedib0t/go-pretty/v6/table"
+	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/tcnksm/go-input"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
@@ -68,14 +69,11 @@ func main() {
 	pw.AppendTracker(&tracker)
 
 	vaultTotal := uint64(constants.TotalVaulted)
-	vaultVested := uint64(0)
-	subsidyTotal := uint64(0)
-	circulatingTotal := uint64(0)
 	issuanceTotal := vaultTotal // vaulted amount is issued but not circulating yet
 
 	oneLayer, _ := time.ParseDuration("5m")
 
-	var vaultNewVest, subsidyNew uint64
+	var vaultVested, subsidyTotal, circulatingTotal, vaultNewVest, subsidyNew uint64
 
 	// note: we could optimize this and just step by tick interval, but we do the simplest possible thing here and get
 	// as close as possible to reality by stepping through every single layer
@@ -118,14 +116,12 @@ func main() {
 			subsidyNew = 0
 		}
 		currentDate = currentDate.Add(oneLayer)
-		//fmt.Printf(".")
 	}
 	tracker.MarkAsDone()
 	t.Render()
 }
 
 func getParams() (time.Time, uint32, uint32) {
-	// get params
 	ui := &input.UI{}
 	var genesisDate time.Time
 	if genesisDateStr, err := ui.Ask("effective genesis date (YYYYMMDD)", &input.Options{
