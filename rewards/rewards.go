@@ -7,25 +7,27 @@ import (
 )
 
 var (
-	Ctx          = decimal.Context128
-	Two          = decimal.New(2, 0)
-	HalfLife     = decimal.New(constants.HalfLife, 0)
-	M            = new(decimal.Big)
-	LogTwo       = Ctx.Log(M, Two)
-	Lambda       = LogTwo.Quo(LogTwo, HalfLife)
-	NegLambda    = new(decimal.Big).Copy(Lambda).Neg(Lambda)
-	TotalSubsidy = new(decimal.Big).SetUint64(constants.TotalSubsidy)
+	Ctx               = decimal.Context128
+	One               = decimal.New(1, 0)
+	Two               = decimal.New(2, 0)
+	HalfLife          = decimal.New(constants.HalfLife, 0)
+	LogTwo            = Ctx.Log(new(decimal.Big), Two)
+	Lambda            = Ctx.Quo(new(decimal.Big), LogTwo, HalfLife)
+	NegLambda         = new(decimal.Big).Copy(Lambda).Neg(Lambda)
+	TotalSubsidy      = new(decimal.Big).SetUint64(constants.TotalSubsidy)
+	FinalIssuanceFrac = Ctx.Quo(new(decimal.Big), Ctx.Sub(new(decimal.Big), TotalSubsidy, One), TotalSubsidy)
+	FinalLayer        = Ctx.Quo(new(decimal.Big), Ctx.Log(new(decimal.Big), new(decimal.Big).Sub(One, FinalIssuanceFrac)), NegLambda)
 )
 
 func getUnroundedAccumulatedSubsidy(layersAfterEffectiveGenesis uint32) *decimal.Big {
 	// add one because layers are zero-indexed and we want > 0 issuance in the first effective genesis layer
 	layerCount := new(decimal.Big).SetUint64(uint64(layersAfterEffectiveGenesis + 1))
-	expInner := new(decimal.Big).Mul(NegLambda, layerCount)
+	expInner := Ctx.Mul(new(decimal.Big), NegLambda, layerCount)
 	expOuter := new(decimal.Big)
 	Ctx.Exp(expOuter, expInner)
 	one := decimal.New(1, 0)
-	supplyMultiplier := one.Sub(one, expOuter)
-	return new(decimal.Big).Mul(TotalSubsidy, supplyMultiplier)
+	supplyMultiplier := Ctx.Sub(one, one, expOuter)
+	return Ctx.Mul(new(decimal.Big), TotalSubsidy, supplyMultiplier)
 }
 
 // TotalAccumulatedSubsidyAtLayer returns the total accumulated block subsidy paid by the protocol as of the given

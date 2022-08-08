@@ -103,5 +103,29 @@ func Test_Halving(t *testing.T) {
 }
 
 // test issuance of final smidge
-func Test_IssuanceAtFinalLayer(t *testing.T) {
+func Test_FinalLayer(t *testing.T) {
+	finalLayer, ok := FinalLayer.Uint64()
+	assert.True(t, ok)
+	finalLayerUint32 := uint32(finalLayer)
+	assert.Equal(t, finalLayer, uint64(finalLayerUint32))
+
+	// check against hardcoded number
+	assert.Equal(t, uint32(199205893), finalLayerUint32)
+
+	// that final smidge will never be issued since, beyond this point, all issuance will be rounded down to zero
+	expectedFinalTotalIssuance := uint64(constants.TotalSubsidy) - 1
+	subsidyLayer := TotalSubsidyAtLayer(finalLayerUint32)
+	subsidyTotal := TotalAccumulatedSubsidyAtLayer(finalLayerUint32)
+	assert.Equal(t, uint64(1), subsidyLayer,
+		"expected final layer %d subsidy %d to equal %d", finalLayerUint32, subsidyLayer, 1)
+	assert.Equal(t, expectedFinalTotalIssuance, subsidyTotal,
+		"expected final layer %d total subsidy %d to equal %d", finalLayerUint32, subsidyTotal, expectedFinalTotalIssuance)
+
+	// one layer later we expect issuance to go to zero
+	subsidyLayerBeyond := TotalSubsidyAtLayer(finalLayerUint32 + 1)
+	subsidyTotalBeyond := TotalAccumulatedSubsidyAtLayer(finalLayerUint32 + 1)
+	assert.Equal(t, uint64(0), subsidyLayerBeyond,
+		"expected final layer +1 %d subsidy %d to equal %d", finalLayerUint32+1, subsidyLayerBeyond, 0)
+	assert.Equal(t, expectedFinalTotalIssuance, subsidyTotalBeyond,
+		"expected final layer +1 %d total subsidy %d to equal %d", finalLayerUint32+1, subsidyTotalBeyond, expectedFinalTotalIssuance)
 }
