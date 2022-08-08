@@ -9,14 +9,13 @@ import (
 var (
 	Ctx               = decimal.Context128
 	One               = decimal.New(1, 0)
-	Two               = decimal.New(2, 0)
 	HalfLife          = decimal.New(constants.HalfLife, 0)
-	LogTwo            = Ctx.Log(new(decimal.Big), Two)
+	LogTwo            = Ctx.Log(new(decimal.Big), decimal.New(2, 0))
 	Lambda            = Ctx.Quo(new(decimal.Big), LogTwo, HalfLife)
 	NegLambda         = decimal.WithContext(Ctx).Copy(Lambda).Neg(Lambda)
 	TotalSubsidy      = decimal.WithContext(Ctx).SetUint64(constants.TotalSubsidy)
 	FinalIssuanceFrac = Ctx.Quo(new(decimal.Big), Ctx.Sub(new(decimal.Big), TotalSubsidy, One), TotalSubsidy)
-	FinalLayer        = Ctx.Quo(new(decimal.Big), Ctx.Log(new(decimal.Big), new(decimal.Big).Sub(One, FinalIssuanceFrac)), NegLambda)
+	FinalLayer        = Ctx.Quo(new(decimal.Big), Ctx.Log(new(decimal.Big), Ctx.Sub(new(decimal.Big), One, FinalIssuanceFrac)), NegLambda)
 )
 
 func getUnroundedAccumulatedSubsidy(layersAfterEffectiveGenesis uint32) *decimal.Big {
@@ -25,8 +24,7 @@ func getUnroundedAccumulatedSubsidy(layersAfterEffectiveGenesis uint32) *decimal
 	expInner := Ctx.Mul(new(decimal.Big), NegLambda, layerCount)
 	expOuter := new(decimal.Big)
 	Ctx.Exp(expOuter, expInner)
-	one := decimal.New(1, 0)
-	supplyMultiplier := Ctx.Sub(one, one, expOuter)
+	supplyMultiplier := Ctx.Sub(new(decimal.Big), One, expOuter)
 	return Ctx.Mul(new(decimal.Big), TotalSubsidy, supplyMultiplier)
 }
 
