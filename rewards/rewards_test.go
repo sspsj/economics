@@ -74,11 +74,11 @@ func Test_Subsidy(t *testing.T) {
 		{10, 477290484662, 5250200899893},
 		{100, 477281372481, 48205929913896},
 		{1000, 477190260232, 477718117773694},
-		{10000, 476280093827, 4768332952709153},
-		{100000, 467273365590, 47226944479755920},
-		{1000000, 386061943700, 430065653103871600},
-		{10000000, 57215889000, 1980278615961832000},
-		{100000000, 0, 2249999998621166000},
+		{10000, 476280093827, 4768332952709150},
+		{100000, 467273365577, 47226944479755904},
+		{1000000, 386061943727, 430065653103871634},
+		{10000000, 57215889114, 1980278615961832312},
+		{100000000, 293, 2249999998621166071},
 		{1000000000, 0, 2250000000000000000},
 	}
 	for _, testTuple := range testValues {
@@ -95,11 +95,9 @@ func Test_Subsidy(t *testing.T) {
 func Test_Halving(t *testing.T) {
 	// subtract one because we zero index layers
 	totalAtHalfLife := TotalAccumulatedSubsidyAtLayer(constants.HalfLife - 1)
-
-	// add hardcoded value, check single layer issuance
-
-	//assert.Equal(t, 0, totalAtHalfLife.Mul(totalAtHalfLife, new(decimal.Big).SetUint64(2)).Cmp(new(decimal.Big).SetUint64(constants.TotalSubsidy)))
-	assert.Equal(t, totalAtHalfLife*2, constants.TotalSubsidy)
+	assert.Equal(t, uint64(constants.TotalSubsidy), totalAtHalfLife*2,
+		"expected total accum. subsidy %d at halfway point %d to be half of total subsidy %d",
+		totalAtHalfLife, constants.HalfLife, constants.TotalSubsidy)
 }
 
 // test issuance of final smidge
