@@ -1,6 +1,8 @@
 package main
 
 import (
+	"flag"
+	"fmt"
 	"github.com/spacemeshos/economics/constants"
 	"github.com/spacemeshos/economics/rewards"
 	"github.com/spacemeshos/economics/vesting"
@@ -17,7 +19,14 @@ import (
 	"time"
 )
 
+var (
+	qFlag = flag.Bool("q", false, "quiet mode (noninteractive)")
+)
+
 func main() {
+	// parse flags
+	flag.Parse()
+
 	currentDate, tickInterval, endLayer := getParams()
 	log.Printf("genesis date is %s\n", currentDate)
 	log.Printf("tick interval is %d\n", tickInterval)
@@ -59,8 +68,12 @@ func main() {
 
 	pw := progress.NewWriter()
 	pw.SetUpdateFrequency(time.Millisecond * 100)
-	go pw.Render()
-	defer pw.Stop()
+
+	// don't render progress bar in quiet mode
+	if !*qFlag {
+		go pw.Render()
+		defer pw.Stop()
+	}
 	tracker := progress.Tracker{Total: int64(endLayer), Units: progress.Units{
 		Formatter:        progress.FormatNumber,
 		Notation:         " layers",
@@ -121,11 +134,26 @@ func main() {
 	t.Render()
 }
 
+const (
+	defaultGenesisDateStr = "20230101"
+	defaultTickInterval   = 2016
+	defaultEndLayer       = 1051920
+)
+
+var (
+	defaultGenesisDate, _ = time.Parse("20060102", defaultGenesisDateStr)
+)
+
 func getParams() (time.Time, uint32, uint32) {
+	// short-circuit UI in quiet mode
+	if *qFlag {
+		return defaultGenesisDate, defaultTickInterval, defaultEndLayer
+	}
+
 	ui := &input.UI{}
 	var genesisDate time.Time
 	if genesisDateStr, err := ui.Ask("effective genesis date (YYYYMMDD)", &input.Options{
-		Default:   "20230101",
+		Default:   defaultGenesisDateStr,
 		HideOrder: true,
 		Required:  true,
 		Loop:      true,
@@ -139,10 +167,10 @@ func getParams() (time.Time, uint32, uint32) {
 		genesisDate, _ = time.Parse("20060102", genesisDateStr)
 	}
 
-	defaultTickVal := "2016 (one week)"
+	defaultTickIntervalStr := fmt.Sprintf("%d (one week)", defaultTickInterval)
 	var tickInterval int
 	if tickIntervalStr, err := ui.Ask("layer tick interval", &input.Options{
-		Default:   defaultTickVal,
+		Default:   defaultTickIntervalStr,
 		HideOrder: true,
 		Required:  true,
 		Loop:      true,
@@ -152,16 +180,16 @@ func getParams() (time.Time, uint32, uint32) {
 		},
 	}); err != nil {
 		log.Fatal(err)
-	} else if tickIntervalStr == defaultTickVal {
-		tickInterval = 2016
+	} else if tickIntervalStr == defaultTickIntervalStr {
+		tickInterval = defaultTickInterval
 	} else {
 		tickInterval, _ = strconv.Atoi(tickIntervalStr)
 	}
 
-	defaultEndLayer := "1051920 (ten years)"
+	defaultEndLayerStr := fmt.Sprintf("%d (ten years)", defaultEndLayer)
 	var endLayer int
 	if endLayerStr, err := ui.Ask("end layer", &input.Options{
-		Default:   defaultEndLayer,
+		Default:   defaultEndLayerStr,
 		HideOrder: true,
 		Required:  true,
 		Loop:      true,
@@ -171,8 +199,8 @@ func getParams() (time.Time, uint32, uint32) {
 		},
 	}); err != nil {
 		log.Fatal(err)
-	} else if endLayerStr == defaultEndLayer {
-		endLayer = 1051920
+	} else if endLayerStr == defaultEndLayerStr {
+		endLayer = defaultEndLayer
 	} else {
 		endLayer, _ = strconv.Atoi(endLayerStr)
 	}
