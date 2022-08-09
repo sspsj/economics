@@ -9,7 +9,7 @@ const (
 	CliffRatio    = 0.25                 // pct vest at cliff
 	VestStart     = 105190               // one year, in layers
 	VestEnd       = 4 * VestStart        // four years post-genesis, three years post-vesting start
-	VestLayers    = VestEnd - VestStart  // three years, in layers
+	VestLayers    = VestEnd - VestStart  // three years, in layers (exclusive of start layer, inclusive of end layer)
 	VestedAtCliff = uint64(CliffRatio * TotalVaulted)
 
 	// VestPerLayer is rounded down to the nearest int. We make up for this rounding in the code.

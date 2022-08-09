@@ -8,7 +8,7 @@ import (
 func AccumulatedVestAtLayer(layersAfterEffectiveGenesis uint32) uint64 {
 	if layersAfterEffectiveGenesis < constants.VestStart {
 		return 0
-	} else if layersAfterEffectiveGenesis > constants.VestEnd {
+	} else if layersAfterEffectiveGenesis >= constants.VestEnd {
 		return constants.TotalVaulted
 	}
 
