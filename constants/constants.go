@@ -7,8 +7,9 @@ const (
 
 	TotalVaulted  = OneSmesh * 150000000 // 150mn smesh
 	CliffRatio    = 0.25                 // pct vest at cliff
-	VestStart     = 105190               // one year, in layers
-	VestEnd       = 4 * VestStart        // four years post-genesis, three years post-vesting start
+	OneYear       = 105120               // 365 days, in 5-minute intervals
+	VestStart     = OneYear              // one year, in layers
+	VestEnd       = 4 * OneYear          // four years post-genesis, three years post-vesting start
 	VestLayers    = VestEnd - VestStart  // three years, in layers (exclusive of start layer, inclusive of end layer)
 	VestedAtCliff = uint64(CliffRatio * TotalVaulted)
 
@@ -17,8 +18,7 @@ const (
 
 	// Total issuance figures
 
+	TenYearTarget = OneSmesh * 600000000
 	TotalIssuance = OneSmesh * 2400000000 // 2.4bn smesh
 	TotalSubsidy  = TotalIssuance - TotalVaulted
-
-	HalfLife = 3267565 // in layers, ~31 years, s.t. total issuance at 10 years is ~600m
 )

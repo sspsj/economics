@@ -9,23 +9,27 @@ import (
 
 var (
 	Ctx               = decimal.Context128
-	One               = decimal.New(1, 0)
-	HalfLife          = decimal.New(constants.HalfLife, 0)
-	LogTwo            = Ctx.Log(new(decimal.Big), decimal.New(2, 0))
-	Lambda            = Ctx.Quo(new(decimal.Big), LogTwo, HalfLife)
+	One               = decimal.WithContext(Ctx).SetUint64(1)
+	LogTwo            = Ctx.Log(decimal.WithContext(Ctx), decimal.WithContext(Ctx).SetUint64(2))
+	TenYears          = Ctx.Mul(decimal.WithContext(Ctx), decimal.WithContext(Ctx).SetUint64(10), decimal.WithContext(Ctx).SetUint64(constants.OneYear))
+	IssuanceNum       = decimal.WithContext(Ctx).SetUint64(constants.TenYearTarget - constants.TotalVaulted)
+	IssuanceDenom     = decimal.WithContext(Ctx).SetUint64(constants.TotalSubsidy)
+	IssuanceFrac      = Ctx.Sub(decimal.WithContext(Ctx), One, Ctx.Quo(decimal.WithContext(Ctx), IssuanceNum, IssuanceDenom))
+	HalfLife          = Ctx.Mul(decimal.WithContext(Ctx), decimal.WithContext(Ctx).Neg(TenYears), Ctx.Quo(decimal.WithContext(Ctx), LogTwo, Ctx.Log(decimal.WithContext(Ctx), IssuanceFrac)))
+	Lambda            = Ctx.Quo(decimal.WithContext(Ctx), LogTwo, HalfLife)
 	NegLambda         = decimal.WithContext(Ctx).Copy(Lambda).Neg(Lambda)
-	TotalSubsidy      = decimal.New(constants.TotalSubsidy, 0)
-	FinalIssuanceFrac = Ctx.Quo(new(decimal.Big), Ctx.Sub(new(decimal.Big), TotalSubsidy, One), TotalSubsidy)
-	FinalLayer        = Ctx.Quo(new(decimal.Big), Ctx.Log(new(decimal.Big), Ctx.Sub(new(decimal.Big), One, FinalIssuanceFrac)), NegLambda)
+	TotalSubsidy      = decimal.WithContext(Ctx).SetUint64(constants.TotalSubsidy)
+	FinalIssuanceFrac = Ctx.Quo(decimal.WithContext(Ctx), Ctx.Sub(decimal.WithContext(Ctx), TotalSubsidy, One), TotalSubsidy)
+	FinalLayer        = Ctx.Quo(decimal.WithContext(Ctx), Ctx.Log(decimal.WithContext(Ctx), Ctx.Sub(decimal.WithContext(Ctx), One, FinalIssuanceFrac)), NegLambda)
 )
 
 func getUnroundedAccumulatedSubsidy(layersAfterEffectiveGenesis uint32) *decimal.Big {
 	// add one because layers are zero-indexed and we want > 0 issuance in the first effective genesis layer
-	layerCount := new(decimal.Big).SetUint64(uint64(layersAfterEffectiveGenesis + 1))
-	expInner := Ctx.Mul(new(decimal.Big), NegLambda, layerCount)
-	expOuter := Ctx.Exp(new(decimal.Big), expInner)
-	supplyMultiplier := Ctx.Sub(new(decimal.Big), One, expOuter)
-	return Ctx.Mul(new(decimal.Big), TotalSubsidy, supplyMultiplier)
+	layerCount := decimal.WithContext(Ctx).SetUint64(uint64(layersAfterEffectiveGenesis))
+	expInner := Ctx.Mul(decimal.WithContext(Ctx), NegLambda, layerCount)
+	expOuter := Ctx.Exp(decimal.WithContext(Ctx), expInner)
+	supplyMultiplier := Ctx.Sub(decimal.WithContext(Ctx), One, expOuter)
+	return Ctx.Mul(decimal.WithContext(Ctx), TotalSubsidy, supplyMultiplier)
 }
 
 // TotalAccumulatedSubsidyAtLayer returns the total accumulated block subsidy paid by the protocol as of the given

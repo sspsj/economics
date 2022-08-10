@@ -80,6 +80,7 @@ func main() {
 		NotationPosition: progress.UnitsNotationPositionAfter,
 	}}
 	pw.AppendTracker(&tracker)
+	trackerTickInterval := 1000
 
 	vaultTotal := uint64(constants.TotalVaulted)
 	issuanceTotal := vaultTotal // vaulted amount is issued but not circulating yet
@@ -105,8 +106,12 @@ func main() {
 		subsidyNew += subsidyThisLayer
 		subsidyTotal = subsidyTotalNew
 
+		// increment here in case tick interval is really big
+		if layerID > 0 && layerID%uint32(trackerTickInterval) == 0 {
+			tracker.Increment(int64(trackerTickInterval))
+		}
+
 		if layerID%tickInterval == 0 || layerID == endLayer {
-			tracker.Increment(int64(tickInterval))
 			t.AppendRow(table.Row{
 				layerID,
 				currentDate.Format("2006-01-02"),
@@ -137,7 +142,7 @@ func main() {
 const (
 	defaultGenesisDateStr = "20230101"
 	defaultTickInterval   = 2016
-	defaultEndLayer       = 1051920
+	defaultEndLayer       = 10 * constants.OneYear
 )
 
 var (
