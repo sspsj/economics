@@ -62,7 +62,7 @@ func main() {
 		{Number: 13, Align: text.AlignRight},
 		{Number: 14, Align: text.AlignRight},
 	})
-	t.SetCaption("all figures in SMESH")
+	t.SetCaption("all figures in SMESH (rounded down)")
 
 	p := message.NewPrinter(language.English)
 

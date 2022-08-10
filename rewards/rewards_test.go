@@ -4,12 +4,13 @@ import (
 	"github.com/ericlagergren/decimal"
 	"github.com/spacemeshos/economics/constants"
 	"github.com/stretchr/testify/assert"
+	"math"
 	"testing"
 )
 
 func Test_Lambda(t *testing.T) {
-	// https://www.wolframalpha.com/input?i=IntegerPart%5Blog%282%29%2F3265325.445944065837653721294562894*10e39%5D
-	expectedLambda, ok := decimal.WithContext(Ctx).SetString("2122750678407627052571300326387314")
+	// https://www.wolframalpha.com/input?i=IntegerPart%5Blog%282%29%2F3265328.552227785343043597296961386*10e39%5D
+	expectedLambda, ok := decimal.WithContext(Ctx).SetString("2122748659050074683778792926470147")
 	assert.True(t, ok)
 	scaleFactor, ok := decimal.WithContext(Ctx).SetString("10e39")
 	assert.True(t, ok)
@@ -59,8 +60,11 @@ func Test_Rounddown(t *testing.T) {
 
 		rounddown := decimal.WithContext(Ctx).Sub(subsidyUnrounded, subsidyBigIntPart)
 		assert.Equal(t, 1, rounddown.Sign(), "expected positive rounddown value")
-		rounddownFloat, ok := rounddown.Float64()
-		assert.True(t, ok)
+
+		// discard ok value since we don't care if truncation happens (we check for NaN and Inf)
+		rounddownFloat, _ := rounddown.Float64()
+		assert.False(t, math.IsInf(rounddownFloat, 0))
+		assert.False(t, math.IsNaN(rounddownFloat))
 
 		// note: we expect there to _always_ be a rounddown
 		assert.Greater(t, rounddownFloat, float64(0), "expected rounddown between zero and one")
@@ -80,17 +84,16 @@ func Test_TenYearIssuance(t *testing.T) {
 	// total subsidy at ten years should be 450M
 	expectedTenYearSubsidy := uint64(constants.TenYearTarget - constants.TotalVaulted)
 
+	// subtract one to make up for the effective genesis layer
 	tenYears := constants.OneYear * 10
 	tenYearsU32 := uint32(tenYears)
 	tenYearSubsidyRaw := getUnroundedAccumulatedSubsidy(tenYearsU32)
 	tenYearSubsidy := TotalAccumulatedSubsidyAtLayer(tenYearsU32)
-	assert.Equal(t, 1, tenYearSubsidyRaw.Cmp(new(decimal.Big).SetUint64(tenYearSubsidy)),
-		"expected subsidy to be rounded")
 
 	// we expect to be one smidge short due to rounding
-	assert.Equal(t, expectedTenYearSubsidy-1, tenYearSubsidy,
+	assert.Equal(t, expectedTenYearSubsidy, tenYearSubsidy,
 		"expected total subsidy of %d at ten years, got %d raw %f",
-		expectedTenYearSubsidy-1, tenYearSubsidy, tenYearSubsidyRaw)
+		expectedTenYearSubsidy, tenYearSubsidy, tenYearSubsidyRaw)
 }
 
 // test hardcoded subsidy in sampled layers
@@ -100,16 +103,16 @@ func Test_Subsidy(t *testing.T) {
 		expectedSubsidyLayer uint64
 		expectedSubsidyTotal uint64
 	}{
-		{0, 0, 0},
-		{1, 477618851948, 477618851948},
-		{10, 477617939470, 4776183957091},
-		{100, 477608814783, 47761383334833},
-		{1000, 477517577499, 477568212936019},
-		{10000, 476606162709, 4771123282240424},
-		{100000, 467587145594, 47258525358305362},
-		{1000000, 386270606901, 430330032010906191},
-		{10000000, 57171902772, 1980670693994627720},
-		{100000000, 288, 2249999998641081355},
+		{0, 477618397593, 477618397593},
+		{1, 477618296206, 955236693799},
+		{10, 477617383730, 5253796797276},
+		{100, 477608259062, 48238946159315},
+		{1000, 477517021972, 478045275698980},
+		{10000, 476605609108, 4771595353929638},
+		{100000, 467586610967, 47258948463689552},
+		{1000000, 386270235450, 430330050824675272},
+		{10000000, 57171951699, 1980670207293862126},
+		{100000000, 289, 2249999998641054202},
 		{1000000000, 0, 2250000000000000000},
 	}
 	for _, testTuple := range testValues {
@@ -124,21 +127,26 @@ func Test_Subsidy(t *testing.T) {
 
 // test issuance halving
 func Test_Halving(t *testing.T) {
-	// https://www.wolframalpha.com/input?i=-1051200*log%282%29%2Flog%281-%28450%2F2250%29%29
-	expectedHalfLife, ok := new(decimal.Big).SetString("3265325.445944065837653721294562894")
+	// https://www.wolframalpha.com/input?i=-1051201*log%282%29%2Flog%281-%28450%2F2250%29%29
+	expectedHalfLife, ok := new(decimal.Big).SetString("3265328.552227785343043597296961386")
 	assert.True(t, ok)
-	assert.Equal(t, 0, HalfLife.Cmp(expectedHalfLife))
+	assert.Equal(t, 0, HalfLife.Cmp(expectedHalfLife),
+		"expected half life %f got %f", expectedHalfLife, HalfLife)
 
 	expectedSubsidyAtHalflife := uint64(constants.TotalSubsidy / 2)
 	issuanceMargin := uint64(150 * constants.OneSmesh)
 
 	// half life is not an integer so we cannot test this precisely, just test the nearest layers
-	lastLayerBeforeHalflife, ok := decimal.WithContext(Ctx).Copy(HalfLife).RoundToInt().Uint64()
+	ctx := Ctx
+	ctx.RoundingMode = decimal.ToZero
+	lastLayerBeforeHalflife, ok := decimal.WithContext(ctx).Copy(HalfLife).RoundToInt().Uint64()
 	assert.True(t, ok)
 	lastLayerBeforeHalflifeU32 := uint32(lastLayerBeforeHalflife)
 	assert.Equal(t, lastLayerBeforeHalflife, uint64(lastLayerBeforeHalflifeU32))
 
-	totalBeforeHalfLife := TotalAccumulatedSubsidyAtLayer(lastLayerBeforeHalflifeU32)
+	// subtract one to make up for effective genesis layer
+	// in other words, since we shift all layers +1, half life will occur one layer earlier
+	totalBeforeHalfLife := TotalAccumulatedSubsidyAtLayer(lastLayerBeforeHalflifeU32 - 1)
 
 	// expect it to be within the margin
 	assert.Less(t, expectedSubsidyAtHalflife-totalBeforeHalfLife, issuanceMargin)
@@ -147,7 +155,8 @@ func Test_Halving(t *testing.T) {
 	firstLayerAfterHalfLifeU32 := uint32(lastLayerBeforeHalflife + 1)
 	assert.Equal(t, lastLayerBeforeHalflife+1, uint64(firstLayerAfterHalfLifeU32))
 
-	totalAfterHalfLife := TotalAccumulatedSubsidyAtLayer(firstLayerAfterHalfLifeU32)
+	// subtract one to make up for effective genesis layer
+	totalAfterHalfLife := TotalAccumulatedSubsidyAtLayer(firstLayerAfterHalfLifeU32 - 1)
 
 	// expect it to be within the margin
 	assert.Less(t, totalAfterHalfLife-expectedSubsidyAtHalflife, issuanceMargin)
@@ -156,7 +165,7 @@ func Test_Halving(t *testing.T) {
 
 // test issuance of final smidge
 func Test_FinalLayer(t *testing.T) {
-	expectedFinalLayer := 199069359
+	expectedFinalLayer := 199069549
 	finalLayer, ok := FinalLayer.Uint64()
 	assert.True(t, ok)
 	finalLayerUint32 := uint32(finalLayer)
@@ -165,9 +174,6 @@ func Test_FinalLayer(t *testing.T) {
 	// check against hardcoded number
 	assert.Equal(t, uint32(expectedFinalLayer), finalLayerUint32,
 		"expected final layer %d to be %d", finalLayerUint32, expectedFinalLayer)
-
-	// increment by one to account for rounding down
-	finalLayerUint32++
 
 	// that final smidge will never be issued since, beyond this point, all issuance will be rounded down to zero
 	expectedFinalTotalIssuance := uint64(constants.TotalSubsidy) - 1

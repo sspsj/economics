@@ -8,10 +8,12 @@ import (
 )
 
 var (
-	Ctx               = decimal.Context128
-	One               = decimal.WithContext(Ctx).SetUint64(1)
-	LogTwo            = Ctx.Log(decimal.WithContext(Ctx), decimal.WithContext(Ctx).SetUint64(2))
-	TenYears          = Ctx.Mul(decimal.WithContext(Ctx), decimal.WithContext(Ctx).SetUint64(10), decimal.WithContext(Ctx).SetUint64(constants.OneYear))
+	Ctx    = decimal.Context128
+	One    = decimal.WithContext(Ctx).SetUint64(1)
+	LogTwo = Ctx.Log(decimal.WithContext(Ctx), decimal.WithContext(Ctx).SetUint64(2))
+
+	// TenYears contains one extra layer to account for the effective genesis (zero) layer.
+	TenYears          = decimal.WithContext(Ctx).SetUint64(10*constants.OneYear + 1)
 	IssuanceNum       = decimal.WithContext(Ctx).SetUint64(constants.TenYearTarget - constants.TotalVaulted)
 	IssuanceDenom     = decimal.WithContext(Ctx).SetUint64(constants.TotalSubsidy)
 	IssuanceFrac      = Ctx.Sub(decimal.WithContext(Ctx), One, Ctx.Quo(decimal.WithContext(Ctx), IssuanceNum, IssuanceDenom))
@@ -25,7 +27,7 @@ var (
 
 func getUnroundedAccumulatedSubsidy(layersAfterEffectiveGenesis uint32) *decimal.Big {
 	// add one because layers are zero-indexed and we want > 0 issuance in the first effective genesis layer
-	layerCount := decimal.WithContext(Ctx).SetUint64(uint64(layersAfterEffectiveGenesis))
+	layerCount := decimal.WithContext(Ctx).SetUint64(uint64(layersAfterEffectiveGenesis + 1))
 	expInner := Ctx.Mul(decimal.WithContext(Ctx), NegLambda, layerCount)
 	expOuter := Ctx.Exp(decimal.WithContext(Ctx), expInner)
 	supplyMultiplier := Ctx.Sub(decimal.WithContext(Ctx), One, expOuter)
