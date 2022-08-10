@@ -17,7 +17,7 @@ var (
 	IssuanceFrac      = Ctx.Sub(decimal.WithContext(Ctx), One, Ctx.Quo(decimal.WithContext(Ctx), IssuanceNum, IssuanceDenom))
 	HalfLife          = Ctx.Mul(decimal.WithContext(Ctx), decimal.WithContext(Ctx).Neg(TenYears), Ctx.Quo(decimal.WithContext(Ctx), LogTwo, Ctx.Log(decimal.WithContext(Ctx), IssuanceFrac)))
 	Lambda            = Ctx.Quo(decimal.WithContext(Ctx), LogTwo, HalfLife)
-	NegLambda         = decimal.WithContext(Ctx).Copy(Lambda).Neg(Lambda)
+	NegLambda         = decimal.WithContext(Ctx).Neg(Lambda)
 	TotalSubsidy      = decimal.WithContext(Ctx).SetUint64(constants.TotalSubsidy)
 	FinalIssuanceFrac = Ctx.Quo(decimal.WithContext(Ctx), Ctx.Sub(decimal.WithContext(Ctx), TotalSubsidy, One), TotalSubsidy)
 	FinalLayer        = Ctx.Quo(decimal.WithContext(Ctx), Ctx.Log(decimal.WithContext(Ctx), Ctx.Sub(decimal.WithContext(Ctx), One, FinalIssuanceFrac)), NegLambda)
