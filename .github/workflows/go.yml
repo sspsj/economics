@@ -31,7 +31,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-    - uses: pguyot/arm-runner-action@v2.4.0
+    - uses: pguyot/arm-runner-action@v2.5.2
       with:
         base_image: raspios_lite_arm64:latest
         image_additional_mb: 1024
