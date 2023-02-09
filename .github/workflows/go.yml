@@ -1,5 +1,9 @@
 name: Go
 
+env:
+  # NOTE: use the same version as go-spacemesh
+  go-version: "1.19.5"
+
 on:
   push:
     branches: [ "main" ]
@@ -19,7 +23,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v3
       with:
-        go-version: 1.18
+        go-version: ${{ env.go-version }}
 
     - name: Build
       run: go build -v ./...
@@ -27,7 +31,7 @@ jobs:
     - name: Test
       run: go test -v ./...
 
-  build-on-arm:
+  build-on-arm-emu:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
@@ -36,6 +40,24 @@ jobs:
         base_image: raspios_lite_arm64:latest
         image_additional_mb: 1024
         commands: |
-          apt-get install --no-install-recommends -y golang
-          go build -v ./...
-          go test -v ./...
+          wget -q https://go.dev/dl/go${{ env.go-version }}.linux-arm64.tar.gz
+          tar -xf go${{ env.go-version }}.linux-arm64.tar.gz
+          sudo mv go /usr/local
+          /usr/local/go/bin/go build -v ./...
+          /usr/local/go/bin/go test -v ./...
+
+  build-on-arm:
+    runs-on: [self-hosted, linux-arm64]
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Go
+      uses: actions/setup-go@v3
+      with:
+        go-version: ${{ env.go-version }}
+
+    - name: Build
+      run: go build -v ./...
+
+    - name: Test
+      run: go test -v ./...
