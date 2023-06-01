@@ -10,7 +10,6 @@ on:
       - main
 
 jobs:
-
   build:
     strategy:
       matrix:
@@ -20,6 +19,8 @@ jobs:
           - macos-latest
           - [self-hosted, linux-arm64]
     runs-on: ${{ matrix.os }}
+    outputs:
+      go-version: ${{ steps.set-go-version.outputs.version }}
     steps:
     - uses: actions/checkout@v3
     - name: Set up Go
@@ -27,7 +28,28 @@ jobs:
       with:
         check-latest: true
         go-version-file: "go.mod"
+    - name: Set go-version output
+      id: set-go-version
+      if: ${{ matrix.os == 'ubuntu-latest' }}
+      run: |
+        echo "version=`go version | { read _ _ v _; echo ${v#go}; }`" >> $GITHUB_OUTPUT
     - name: Build
       run: go build -v ./...
     - name: Test
       run: go test -v ./...
+
+  build-on-arm-emu:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+    - uses: actions/checkout@v3
+    - uses: pguyot/arm-runner-action@v2
+      with:
+        base_image: raspios_lite_arm64:latest
+        image_additional_mb: 1024
+        commands: |
+          wget -q https://go.dev/dl/go${{ needs.build.outputs.go-version }}.linux-arm64.tar.gz
+          tar -xf go${{ needs.build.outputs.go-version }}.linux-arm64.tar.gz
+          sudo mv go /usr/local
+          /usr/local/go/bin/go build -v ./...
+          /usr/local/go/bin/go test -v ./...
