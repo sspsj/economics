@@ -55,7 +55,8 @@ jobs:
     needs: build
     steps:
     - uses: actions/checkout@v3
-    - uses: pguyot/arm-runner-action@v2
+    - name: Set up qemu
+      uses: pguyot/arm-runner-action@v2
       with:
         base_image: ${{ matrix.base_image }}
         cpu: ${{ matrix.cpu }}
