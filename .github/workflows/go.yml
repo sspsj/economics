@@ -47,9 +47,11 @@ jobs:
         - arch: armv6l
           cpu: arm1176
           base_image: raspios_lite:latest
+          cpu_info: cpuinfo/raspberrypi_zero_w
         - arch: armv7l
           cpu: cortex-a7
           base_image: raspios_lite:latest
+          cpu_info: cpuinfo/raspberrypi_3b
     needs: build
     steps:
     - uses: actions/checkout@v3
@@ -57,11 +59,11 @@ jobs:
       with:
         base_image: ${{ matrix.base_image }}
         cpu: ${{ matrix.cpu }}
+        cpu_info: ${{ matrix.cpu_info }}
         image_additional_mb: 1024
         commands: |
-          wget -q https://go.dev/dl/go${{ needs.build.outputs.go-version }}.linux-arm64.tar.gz
-          tar -xf go${{ needs.build.outputs.go-version }}.linux-arm64.tar.gz
+          wget -q https://go.dev/dl/go${{ needs.build.outputs.go-version }}.linux-armv6l.tar.gz
+          tar -xf go${{ needs.build.outputs.go-version }}.linux-armv6l.tar.gz
           sudo mv go /usr/local
-          uname -p
           /usr/local/go/bin/go build -v ./...
           /usr/local/go/bin/go test -v ./...
