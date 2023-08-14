@@ -140,7 +140,7 @@ func main() {
 }
 
 const (
-	defaultGenesisDateStr = "20230101"
+	defaultGenesisDateStr = "20230811"
 	defaultTickInterval   = 2016
 	defaultEndLayer       = 10 * constants.OneYear
 )
