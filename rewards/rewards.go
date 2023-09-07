@@ -1,10 +1,11 @@
 package rewards
 
 import (
+	"log"
+
 	"github.com/spacemeshos/economics/constants"
 
 	"github.com/ericlagergren/decimal"
-	"log"
 )
 
 var (

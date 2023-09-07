@@ -1,11 +1,12 @@
 package rewards
 
 import (
+	"math"
+	"testing"
+
 	"github.com/ericlagergren/decimal"
 	"github.com/spacemeshos/economics/constants"
 	"github.com/stretchr/testify/assert"
-	"math"
-	"testing"
 )
 
 func Test_Lambda(t *testing.T) {
