@@ -3,6 +3,11 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
+	"os"
+	"strconv"
+	"time"
+
 	"github.com/spacemeshos/economics/constants"
 	"github.com/spacemeshos/economics/rewards"
 	"github.com/spacemeshos/economics/vesting"
@@ -13,15 +18,9 @@ import (
 	"github.com/tcnksm/go-input"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
-	"log"
-	"os"
-	"strconv"
-	"time"
 )
 
-var (
-	qFlag = flag.Bool("q", false, "quiet mode (noninteractive)")
-)
+var qFlag = flag.Bool("q", false, "quiet mode (noninteractive)")
 
 func main() {
 	// parse flags
@@ -145,9 +144,7 @@ const (
 	defaultEndLayer       = 10 * constants.OneYear
 )
 
-var (
-	defaultGenesisDate, _ = time.Parse("20060102", defaultGenesisDateStr)
-)
+var defaultGenesisDate, _ = time.Parse("20060102", defaultGenesisDateStr)
 
 func getParams() (time.Time, uint32, uint32) {
 	// short-circuit UI in quiet mode

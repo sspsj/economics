@@ -1,9 +1,10 @@
 package vesting
 
 import (
+	"testing"
+
 	"github.com/spacemeshos/economics/constants"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func Test_Genesis(t *testing.T) {

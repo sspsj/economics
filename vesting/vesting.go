@@ -1,8 +1,9 @@
 package vesting
 
 import (
-	"github.com/spacemeshos/economics/constants"
 	"log"
+
+	"github.com/spacemeshos/economics/constants"
 )
 
 func AccumulatedVestAtLayer(layersAfterEffectiveGenesis uint32) uint64 {
