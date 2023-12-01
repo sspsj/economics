@@ -7,6 +7,7 @@ const (
 
 	TotalVaulted  = OneSmesh * 150000000 // 150mn smesh
 	CliffRatio    = 0.25                 // pct vest at cliff
+	OneEpoch      = 4032                 // mainnet epochs are two weeks long
 	OneYear       = 105120               // 365 days, in 5-minute intervals
 	VestStart     = OneYear              // one year, in layers
 	VestEnd       = 4 * OneYear          // four years post-genesis, three years post-vesting start

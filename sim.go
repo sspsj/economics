@@ -26,15 +26,19 @@ func main() {
 	// parse flags
 	flag.Parse()
 
+	oneLayer := 5 * time.Minute
+
 	currentDate, tickInterval, endLayer := getParams()
-	log.Printf("genesis date is %s\n", currentDate)
-	log.Printf("tick interval is %d\n", tickInterval)
+	log.Printf("genesis is %s\n", currentDate)
+	log.Printf("effective genesis is/issuance begins %s\n", currentDate.Add(effectiveGenesis*oneLayer))
+	log.Printf("tick interval is %d layers\n", tickInterval)
 	log.Printf("last layer is %d\n", endLayer)
 
 	t := table.NewWriter()
 	t.SetOutputMirror(os.Stdout)
 	t.AppendHeader(table.Row{
 		"layer",
+		"epoch",
 		"date",
 		"vaultNewVest",
 		"vaultTotalVest",
@@ -50,18 +54,21 @@ func main() {
 		"pctFinalIssuance",
 	})
 	t.SetColumnConfigs([]table.ColumnConfig{
-		{Number: 3, Align: text.AlignRight},
 		{Number: 4, Align: text.AlignRight},
 		{Number: 5, Align: text.AlignRight},
-		{Number: 7, Align: text.AlignRight},
+		{Number: 6, Align: text.AlignRight},
 		{Number: 8, Align: text.AlignRight},
 		{Number: 9, Align: text.AlignRight},
 		{Number: 10, Align: text.AlignRight},
 		{Number: 11, Align: text.AlignRight},
-		{Number: 13, Align: text.AlignRight},
+		{Number: 12, Align: text.AlignRight},
 		{Number: 14, Align: text.AlignRight},
+		{Number: 15, Align: text.AlignRight},
 	})
-	t.SetCaption("all figures in SMESH (rounded down)")
+	t.SetCaption("Please note:\n" +
+		"- All figures in SMESH (rounded down)\n" +
+		"- No coins are issued in the first two epochs\n" +
+		"- Figures represent maximum issuance (and do not account for empty layers)\n")
 
 	p := message.NewPrinter(language.English)
 
@@ -84,22 +91,29 @@ func main() {
 	vaultTotal := uint64(constants.TotalVaulted)
 	issuanceTotal := vaultTotal // vaulted amount is issued but not circulating yet
 
-	oneLayer, _ := time.ParseDuration("5m")
-
 	var vaultVested, subsidyTotal, circulatingTotal, vaultNewVest, subsidyNew uint64
 
 	// note: we could optimize this and just step by tick interval, but we do the simplest possible thing here and get
 	// as close as possible to reality by stepping through every single layer
 	for layerID := uint32(0); layerID <= endLayer; layerID++ {
 		// update vault
+		// vault vesting is calculated on the basis of layers post-genesis
 		vaultVested = vesting.AccumulatedVestAtLayer(layerID)
 		vestThisLayer := vesting.VestAtLayer(layerID)
 		vaultNewVest += vestThisLayer
 		circulatingTotal += vestThisLayer
 
 		// add new issuance
-		subsidyTotalNew := rewards.TotalAccumulatedSubsidyAtLayer(layerID)
-		subsidyThisLayer := subsidyTotalNew - subsidyTotal
+		// issuance is calculated on the basis of layers post-effective genesis
+		// and no issuance occurs before effective genesis
+		var subsidyTotalNew, subsidyThisLayer uint64
+		if layerID >= effectiveGenesis {
+			// calculate effective layer, i.e., layers post-effective-genesis
+			effectiveLayer := layerID - effectiveGenesis
+			subsidyTotalNew = rewards.TotalAccumulatedSubsidyAtLayer(effectiveLayer)
+			subsidyThisLayer = subsidyTotalNew - subsidyTotal
+		}
+
 		circulatingTotal += subsidyThisLayer
 		issuanceTotal += subsidyThisLayer
 		subsidyNew += subsidyThisLayer
@@ -113,6 +127,7 @@ func main() {
 		if layerID%tickInterval == 0 || layerID == endLayer {
 			t.AppendRow(table.Row{
 				layerID,
+				layerID / constants.OneEpoch,
 				currentDate.Format("2006-01-02"),
 				p.Sprintf("%7d", vaultNewVest/constants.OneSmesh),
 				p.Sprintf("%11d", vaultVested/constants.OneSmesh),
@@ -139,9 +154,17 @@ func main() {
 }
 
 const (
-	defaultGenesisDateStr = "20230811"
-	defaultTickInterval   = 2016
-	defaultEndLayer       = 10 * constants.OneYear
+	// Actual mainnet genesis
+	defaultGenesisDateStr = "20230714"
+
+	// One mainnet epoch
+	defaultTickInterval = constants.OneEpoch
+
+	// Effective genesis occurs two epochs post-genesis
+	effectiveGenesis = 2 * constants.OneEpoch
+
+	// Issuance begins at effective genesis; we reach the ten year target ten years post-effective genesis
+	defaultEndLayer = 10*constants.OneYear + effectiveGenesis
 )
 
 var defaultGenesisDate, _ = time.Parse("20060102", defaultGenesisDateStr)
@@ -154,7 +177,7 @@ func getParams() (time.Time, uint32, uint32) {
 
 	ui := &input.UI{}
 	var genesisDate time.Time
-	if genesisDateStr, err := ui.Ask("effective genesis date (YYYYMMDD)", &input.Options{
+	if genesisDateStr, err := ui.Ask("genesis date (YYYYMMDD)", &input.Options{
 		Default:   defaultGenesisDateStr,
 		HideOrder: true,
 		Required:  true,
@@ -169,7 +192,7 @@ func getParams() (time.Time, uint32, uint32) {
 		genesisDate, _ = time.Parse("20060102", genesisDateStr)
 	}
 
-	defaultTickIntervalStr := fmt.Sprintf("%d (one week)", defaultTickInterval)
+	defaultTickIntervalStr := fmt.Sprintf("%d (one epoch/two weeks)", defaultTickInterval)
 	var tickInterval int
 	if tickIntervalStr, err := ui.Ask("layer tick interval", &input.Options{
 		Default:   defaultTickIntervalStr,
