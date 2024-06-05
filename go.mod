@@ -7,7 +7,7 @@ require (
 	github.com/jedib0t/go-pretty/v6 v6.5.9
 	github.com/stretchr/testify v1.9.0
 	github.com/tcnksm/go-input v0.0.0-20180404061846-548a7d7a8ee8
-	golang.org/x/text v0.15.0
+	golang.org/x/text v0.16.0
 )
 
 require (
